@@ -44,6 +44,11 @@ inputs:
     description: "Specify a concrete version of ShellCheck to use"
     required: false
     default: "stable"
+  report_file:
+    description: "report file with corresponding suffixes"
+    required: false
+    default: "report.log"
+
 outputs:
   files:
     description: A list of files with issues
@@ -152,6 +157,7 @@ runs:
         INPUT_EXCLUDE_ARGS: ${{ steps.exclude.outputs.excludes }}
         INPUT_ADDITIONAL_FILE_ARGS: ${{ steps.additional.outputs.files }}
         INPUT_SHELLCHECK_OPTIONS: ${{ steps.options.outputs.options }}
+        INPUT_REPORT_FILE: ${{ inputs.report_file }}
       run: |
         statuscode=0
         declare -a filepaths
@@ -206,12 +212,12 @@ runs:
         if [[ -n "${INPUT_CHECK_TOGETHER}" ]]; then
           "${{ github.action_path }}/shellcheck" \
             ${INPUT_SHELLCHECK_OPTIONS} \
-            "${filepaths[@]}" || statuscode=$?
+            "${filepaths[@]}" | tee ${INPUT_REPORT_FILE} || statuscode=$?
         else
           for file in "${filepaths[@]}"; do
             "${{ github.action_path }}/shellcheck" \
               ${INPUT_SHELLCHECK_OPTIONS} \
-              "$file" || statuscode=$?
+              "$file" | tee -a ${INPUT_REPORT_FILE} || statuscode=$?
           done
         fi
 
